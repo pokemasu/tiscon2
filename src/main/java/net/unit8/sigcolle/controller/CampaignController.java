@@ -24,6 +24,7 @@ import static enkan.util.BeanBuilder.builder;
 import static enkan.util.HttpResponseUtils.RedirectStatusCode.SEE_OTHER;
 import static enkan.util.HttpResponseUtils.redirect;
 import static enkan.util.ThreadingUtils.some;
+import static java.lang.String.valueOf;
 
 /**
  * @author kawasima
@@ -37,7 +38,8 @@ public class CampaignController {
 
     /**
      * キャンペーン詳細画面表示.
-     * @param form URLパラメータ
+     *
+     * @param form  URLパラメータ
      * @param flash flash scope session
      * @return HttpResponse
      */
@@ -55,6 +57,7 @@ public class CampaignController {
 
     /**
      * 署名の追加処理.
+     *
      * @param form 画面入力された署名情報.
      * @return HttpResponse
      */
@@ -95,23 +98,29 @@ public class CampaignController {
      */
     public HttpResponse create(CampaignCreateForm form,
                                Session session) {
+        //結果の種類＝httpRespons 必要なのはログインの状態
+        //もしフォーム（ログイン）にエラーがあれば・・・
         if (form.hasErrors()) {
             return templateEngine.render("campaign/new", "form", form);
         }
         LoginUserPrincipal principal = (LoginUserPrincipal) session.get("principal");
-
+        //ログインユーザープリンシパル＝”プリンシパル”＝ログインユーザーの情報
         PegDownProcessor processor = new PegDownProcessor(Extensions.ALL);
 
         // TODO タイトル, 目標人数を登録する
         Campaign model = builder(new Campaign())
-            .set(Campaign::setStatement, processor.markdownToHtml(form.getStatement()))
-            .set(Campaign::setCreateUserId, principal.getUserId())
-            .build();
-        // TODO Databaseに登録する
+                .set(Campaign::setStatement, processor.markdownToHtml(form.getStatement()))
+                .set(Campaign::setCreateUserId, principal.getUserId())
+                .set(Campaign::setTitle, form.getTitle())
+                .set(Campaign::setGoal, Long.parseLong(form.getGoal()))
+                .build();
 
+        // TODO Databaseに登録する
+        CampaignDao campaignDao = domaProvider.getDao(CampaignDao.class);
+        campaignDao.insert(model);
         // TODO 作成完了した旨のflashメッセージを画面に表示する
         return builder(redirect("/campaign/" + model.getCampaignId(), SEE_OTHER))
-            .build();
+                .build();
     }
 
     /**
@@ -135,10 +144,10 @@ public class CampaignController {
         int signatureCount = signatureDao.countByCampaignId(campaignId);
 
         return templateEngine.render("campaign/index",
-                                     "campaign", campaign,
-                                     "signatureCount", signatureCount,
-                                     "signature", form,
-                                     "message", message
+                "campaign", campaign,
+                "signatureCount", signatureCount,
+                "signature", form,
+                "message", message
         );
     }
 }
