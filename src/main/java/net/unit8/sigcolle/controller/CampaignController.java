@@ -24,7 +24,6 @@ import static enkan.util.BeanBuilder.builder;
 import static enkan.util.HttpResponseUtils.RedirectStatusCode.SEE_OTHER;
 import static enkan.util.HttpResponseUtils.redirect;
 import static enkan.util.ThreadingUtils.some;
-import static java.lang.String.valueOf;
 
 /**
  * @author kawasima
@@ -75,7 +74,7 @@ public class CampaignController {
         signatureDao.insert(signature);
 
         return builder(redirect("/campaign/" + form.getCampaignId(), SEE_OTHER))
-                .set(HttpResponse::setFlash, new Flash("ご賛同ありがとうございました！"))
+                .set(HttpResponse::setFlash,new Flash("ご賛同ありがとうございました！"))
                 .build();
     }
 
@@ -131,7 +130,10 @@ public class CampaignController {
      * @param session ログインしているユーザsession
      */
     public HttpResponse listCampaigns(Session session) {
-        throw new UnsupportedOperationException("実装してください !!");
+        //fhTODOログインユーザーの読み込み、作成したキャンペ➖ンの表示
+        LoginUserPrincipal principal = (LoginUserPrincipal) session.get("principal");
+        CampaignDao campaignDao = domaProvider.getDao(CampaignDao.class);
+        return templateEngine.render("campaign/userindex", "campaigns", campaignDao.selectByUserId(principal.getUserId()));
     }
 
     private HttpResponse showCampaign(Long campaignId,
